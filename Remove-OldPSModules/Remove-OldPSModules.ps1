@@ -1,57 +1,23 @@
-
 <#PSScriptInfo
-
 .VERSION 1.0.0
-
 .GUID 887af808-3b0a-4945-b7c7-7589f7bc7953
-
 .AUTHOR Giovanni Solone
-
-.COMPANYNAME
-
-.COPYRIGHT
-
 .TAGS powershell modules cleanup
-
 .LICENSEURI https://opensource.org/licenses/MIT
-
 .PROJECTURI https://github.com/gioxx/Nebula.Scripts/Remove-OldPSModules
-
-.ICONURI
-
-.EXTERNALMODULEDEPENDENCIES 
-
-.REQUIREDSCRIPTS
-
-.EXTERNALSCRIPTDEPENDENCIES
-
-.RELEASENOTES
-
-
-.PRIVATEDATA
-
-#>
-
-<#
-.SYNOPSIS
-    Cleans up duplicate PowerShell modules by removing older versions.
-.DESCRIPTION
-    This script identifies PowerShell modules that have multiple versions installed
-    and removes all but the latest version for each module. It uses the PSResourceGet
-    module to manage PowerShell resources.
-    This script requires PowerShell 7.0 or later and the PSResourceGet module.
-    It will attempt to install the PSResourceGet module if it is not already available.
-.NOTES
-    Author: Giovanni Solone (gioxx.org)
-    Date: 2025-05-28
-
-    This script is available on GitHub at: https://github.com/gioxx/Nebula.Scripts/Remove-OldPSModules
-
-    Modification History:
-    - 2025-05-28: Initial creation
 #>
 
 # Requires -Version 7.0
+
+<#
+.SYNOPSIS
+Removes old versions of installed PowerShell modules, keeping only the latest.
+.DESCRIPTION
+This script identifies all installed PowerShell modules and removes all but the latest version of each module. It uses the `PSResourceGet` module to manage PowerShell resources.
+.EXAMPLE
+.\Remove-OldPSModules.ps1
+Runs the script and removes outdated module versions.
+#>
 
 # Ensure PSResourceGet is available
 try {
