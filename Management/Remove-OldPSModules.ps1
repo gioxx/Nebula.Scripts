@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.0.0
+.VERSION 1.1.0
 .GUID 887af808-3b0a-4945-b7c7-7589f7bc7953
 .AUTHOR Giovanni Solone
 .TAGS powershell modules cleanup
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Remove-OldPSModules
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Management/Remove-OldPSModules.ps1
 #>
 
 # Requires -Version 7.0
