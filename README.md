@@ -1,6 +1,7 @@
 # Nebula.Scripts
 
-🛰️ **Nebula.Scripts** is a collection of PowerShell scripts authored and maintained by [Gioxx](https://github.com/gioxx), designed to automate or simplify common administrative and development tasks. These scripts are individually published on the [PowerShell Gallery](https://www.powershellgallery.com/) for easy discovery and installation.
+🛰️ **Nebula.Scripts** is a collection of PowerShell scripts authored and maintained by [Gioxx](https://github.com/gioxx), designed to automate or simplify common administrative and development tasks.  
+These scripts are individually published on the [PowerShell Gallery](https://www.powershellgallery.com/) for easy discovery and installation.
 
 ---
 
@@ -9,6 +10,7 @@
 | Script Name            | Description                                                      | Gallery Link |
 |------------------------|------------------------------------------------------------------|--------------|
 | `Remove-OldPSModules`  | Removes all but the latest installed version of each PS module. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules) |
+| `Remove-macOS-OldIntuneApps`  | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps) |
 
 More scripts will be added over time.
 
@@ -16,7 +18,8 @@ More scripts will be added over time.
 
 ## 🚀 Getting Started
 
-You can install a script directly from the PowerShell Gallery:
+You can install a script directly from the PowerShell Gallery.  
+The example below is based on the `Remove-OldPSModules` script, [available here](Management/Remove-OldPSModules.ps1):
 
 ```powershell
 Install-Script -Name Remove-OldPSModules -Scope CurrentUser -Force
