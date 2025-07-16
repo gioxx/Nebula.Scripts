@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.0
+.VERSION 1.0.1
 .GUID d2ace103-adeb-47be-80cd-2180db770ece
 .AUTHOR Giovanni Solone
 .TAGS powershell intune macos apps microsoft graph cleanup duplicates
@@ -26,6 +26,10 @@ Runs the script interactively, allowing you to review duplicates and move assign
 .EXAMPLE
 .\Remove-macOS-OldIntuneApps.ps1 -RemoveIfUnassigned -Force
 Removes old versions of macOS apps that are unassigned without prompting for confirmation.
+.NOTES
+Modification History:
+v1.0.1 (2025-07-16): Changed 'SIMULATION' to 'CONFIRMATION REQUEST' for better readability in the removal process.
+					 Changed some text and comments in the script for better clarity and consistency.
 #>
 
 param (
@@ -56,19 +60,16 @@ $appsInfo = foreach ($app in $macOSApps) {
 	}
 
 	[PSCustomObject]@{
-		id          = $app.Id
-		displayName = $app.DisplayName
-		isAssigned  = $app.IsAssigned
-		fileName    = $fileName
-		Version     = $bundleVersion
+		ID			= $app.Id
+		DisplayName	= $app.DisplayName
+		Assigned	= $app.IsAssigned
+		FileName	= $fileName
+		Version		= $bundleVersion
 	}
 }
 
-# Show a full table of all macOS apps
-$appsInfo | Format-Table -AutoSize
-
-# Group apps by name to identify duplicates
-$duplicateApps = $appsInfo | Group-Object -Property displayName | Where-Object { $_.Count -gt 1 }
+$appsInfo | Format-Table -AutoSize # Show a full table of all macOS apps
+$duplicateApps = $appsInfo | Group-Object -Property DisplayName | Where-Object { $_.Count -gt 1 } # Group apps by name to identify duplicates
 
 # Exit if no duplicates were found
 if (-not $duplicateApps) {
@@ -76,63 +77,55 @@ if (-not $duplicateApps) {
 	return
 }
 
-# Display groups with more than one version
-$duplicateApps | Sort-Object -Property Count -Descending | Format-Table -AutoSize
-
-# Identify older versions (excluding latest per group)
+$duplicateApps | Sort-Object -Property Count -Descending | Format-Table -AutoSize # Display groups with more than one version
 $oldVersions = foreach ($group in $duplicateApps) {
+	# Identify older versions (excluding latest per group)
 	$ordered = $group.Group | Sort-Object -Property Version -Descending
 	$ordered | Select-Object -Skip 1
 }
 
-# Show older versions
 if ($oldVersions) {
+	# Show older versions
 	Write-Host "`n--- Old versions found ---" -ForegroundColor Yellow
-	$oldVersions | Sort-Object displayName, Version | Format-Table displayName, Version, isAssigned, fileName, id -AutoSize
+	$oldVersions | Sort-Object DisplayName, Version | Format-Table DisplayName, Version, Assigned, FileName, id -AutoSize
 } else {
 	Write-Host "No old versions found." -ForegroundColor Green
 }
 
-# Highlight old versions that are still assigned
-$stillAssigned = $oldVersions | Where-Object { $_.isAssigned -eq $true }
+$stillAssigned = $oldVersions | Where-Object { $_.Assigned -eq $true } # Highlight old versions that are still assigned
 
 if ($stillAssigned) {
 	Write-Host "`n--- WARNING: Old versions still assigned ---" -ForegroundColor Red
-	$stillAssigned | Sort-Object displayName, Version | Format-Table displayName, Version, fileName, id -AutoSize
+	$stillAssigned | Sort-Object DisplayName, Version | Format-Table DisplayName, Version, FileName, id -AutoSize
 } else {
-	Write-Host "All old versions are unassigned. Safe to remove (please use the -RemoveIfUnassigned switch)." -ForegroundColor Green
+	Write-Host "All old versions are unassigned. Safe to remove (please start again this script and use the -RemoveIfUnassigned switch)." -ForegroundColor Green
 }
 
-# Move assignments from old versions to the newest version
 foreach ($group in $duplicateApps) {
-	# Sort the group by version descending
+	# Move assignments from old versions to the newest version
 	$ordered = $group.Group | Sort-Object -Property Version -Descending
 	$newestApp = $ordered[0]
 	$oldApps = $ordered | Select-Object -Skip 1
 
 	foreach ($oldApp in $oldApps) {
-		# Skip apps that are not still assigned
 		if (-not ($stillAssigned | Where-Object { $_.id -eq $oldApp.id })) {
-			continue
+			continue # Skip apps that are not still assigned
 		}
 
-		# Get assignments from the old version
-		$assignments = Get-MgBetaDeviceAppManagementMobileAppAssignment -MobileAppId $oldApp.id
-
+		$assignments = Get-MgBetaDeviceAppManagementMobileAppAssignment -MobileAppId $oldApp.id # Get assignments from the old version
 		if (-not $assignments) {
 			Write-Host "`nNo assignments found for $($oldApp.displayName) [$($oldApp.Version)]"
 			continue
 		}
 
-		Write-Host "`n==== SIMULATION ====" -ForegroundColor Yellow
+		Write-Host "`n==== CONFIRMATION REQUEST ====" -ForegroundColor Yellow
 		Write-Host "App name     : $($oldApp.displayName)"
 		Write-Host "Old version  : $($oldApp.Version)"
 		Write-Host "New version  : $($newestApp.Version)"
 		Write-Host "Assignments to move:" -ForegroundColor Gray
-		$assignments | Format-Table id, intent, @{Name = "Target"; Expression = { $_.target.groupId } }, -AutoSize
+		$assignments | Format-Table id, intent, @{Name = "Target"; Expression = { $_.target.groupId } } -AutoSize
 
-		# Ask user confirmation
-		$choice = Read-Host "Do you want to move these assignments to the newer version? [y/n] (default: y)"
+		$choice = Read-Host "`nDo you want to move these assignments to the newer version? [y/n] (default: y)" # Ask for user confirmation
 
 		if ([string]::IsNullOrWhiteSpace($choice) -or $choice.ToLower() -eq "y") {
 			foreach ($assignment in $assignments) {
@@ -141,39 +134,35 @@ foreach ($group in $duplicateApps) {
 					target = $assignment.target
 					intent = $assignment.intent
 				}
-
-				# Create new assignment
-				New-MgBetaDeviceAppManagementMobileAppAssignment -MobileAppId $newestApp.id -BodyParameter $newAssignment
-
-				# Remove old assignment
-				Remove-MgBetaDeviceAppManagementMobileAppAssignment -MobileAppId $oldApp.id -MobileAppAssignmentId $assignment.id
-
+				
+				New-MgBetaDeviceAppManagementMobileAppAssignment -MobileAppId $newestApp.id -BodyParameter $newAssignment # Create new assignment
+				Remove-MgBetaDeviceAppManagementMobileAppAssignment -MobileAppId $oldApp.id -MobileAppAssignmentId $assignment.id # Remove old assignment
+				
 				Write-Host "Moved assignment $($assignment.id) to version $($newestApp.Version)" -ForegroundColor Green
 			}
 		} else {
-			Write-Host "Skipped reassignment for $($oldApp.displayName) [$($oldApp.Version)]" -ForegroundColor DarkGray
+			Write-Host "Skipped reassignment for $($oldApp.displayName) $($oldApp.Version)" -ForegroundColor DarkGray
 		}
 	}
 }
 
-# Remove old versions if unassigned and switch is enabled
 if ($RemoveIfUnassigned -and (-not $stillAssigned)) {
+	# Remove old versions if unassigned and switch is enabled
 	foreach ($app in $oldVersions) {
-		Write-Host "`n==== SIMULATION: REMOVE $($app.displayName) [$($app.Version)] ====" -ForegroundColor Yellow
+		Write-Host "`n==== CONFIRMATION REQUEST : Remove $($app.displayName) $($app.Version) ====" -ForegroundColor Yellow
 		Write-Host "App ID   : $($app.id)"
 		Write-Host "File     : $($app.fileName)"
 
 		if (-not $Force) {
-			$confirm = Read-Host "Confirm removal of this app? [y/n] (default: n)"
+			$confirm = Read-Host "`nConfirm removal of this app? [y/n] (default: n)"
 			if ($confirm.ToLower() -ne "y") {
-				Write-Host "Skipped removal for $($app.displayName) [$($app.Version)]" -ForegroundColor DarkGray
+				Write-Host "Skipped removal for $($app.displayName) $($app.Version)" -ForegroundColor DarkGray
 				continue
 			}
 		}
 
-		# Perform actual removal
-		Remove-MgBetaDeviceAppManagementMobileApp -MobileAppId $app.id
-		Write-Host "Removed app $($app.displayName) [$($app.Version)]" -ForegroundColor Green
+		Remove-MgBetaDeviceAppManagementMobileApp -MobileAppId $app.id # Perform actual removal
+		Write-Host "Successfully removed $($app.displayName) version $($app.Version) from Intune" -ForegroundColor Green
 	}
 } elseif ($RemoveIfUnassigned -and $stillAssigned) {
 	Write-Host "`nRemoval blocked: some old versions are still assigned. Nothing will be removed." -ForegroundColor Red
