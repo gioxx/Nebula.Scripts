@@ -1,6 +1,6 @@
 # Nebula.Scripts
 
-🛰️ **Nebula.Scripts** is a collection of PowerShell scripts authored and maintained by [Gioxx](https://github.com/gioxx), designed to automate or simplify common administrative and development tasks.  
+**Nebula.Scripts** is a collection of PowerShell scripts authored and maintained by [Gioxx](https://github.com/gioxx), designed to automate or simplify common administrative and development tasks.  
 These scripts are individually published on the [PowerShell Gallery](https://www.powershellgallery.com/) for easy discovery and installation.
 
 ---
