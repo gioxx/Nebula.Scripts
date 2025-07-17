@@ -9,8 +9,9 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 
 | Script Name            | Description                                                      | Gallery Link |
 |------------------------|------------------------------------------------------------------|--------------|
-| `Remove-OldPSModules`  | Removes all but the latest installed version of each PS module. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules) |
+| `Get-DevicesInGroup`  | View information about devices in an Entra group. | [View on PSGallery](https://www.powershellgallery.com/packages/Get-DevicesInGroup) |
 | `Remove-macOS-OldIntuneApps`  | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps) |
+| `Remove-OldPSModules`  | Removes all but the latest installed version of each PS module. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules) |
 
 More scripts will be added over time.
 
