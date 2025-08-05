@@ -131,6 +131,14 @@ All scripts in this repository are licensed under the [MIT License](https://open
 
 ---
 
+## 🔧 Development
+
+This module is part of the [Nebula](https://github.com/gioxx?tab=repositories&q=Nebula) PowerShell tools family.
+
+Feel free to fork, improve and submit pull requests.
+
+---
+
 ## 📬 Feedback and Contributions
 
 Feedback, suggestions, and pull requests are welcome!  
