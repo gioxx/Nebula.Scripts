@@ -15,6 +15,18 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 
 More scripts will be added over time.
 
+### 🛡️ Intune Remediation Scripts
+
+The [`Intune/Remediations`](Intune/Remediations) folder contains proactive remediation scripts designed for use with **Microsoft Intune**. These include detection and remediation script pairs used to identify and fix configuration issues (but not only issues) on managed Windows devices; for example, removing built-in apps or enforcing specific registry-based policies such as disabling Microsoft 365 Copilot.
+
+Each remediation typically includes:
+
+- `*_Detection.ps1`: Returns compliance status (exit code 0 or 1).
+- `*_Remediation.ps1`: Applies the necessary fix if the device is non-compliant.
+
+These scripts are not published to the PowerShell Gallery (because obviously not suitable) and are meant to be downloaded directly from this repository or packaged for deployment in Microsoft Intune.  
+Within the detection and remediation scripts you will always be able to find the header within which I will try to include all the basic information to understand the purpose and how to use the _pair of scripts_. Please [open an issue](issues/new/choose) in case something is unclear or completely missing in the scripts.
+
 ---
 
 ## 🚀 Getting Started
