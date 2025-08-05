@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.0
+.VERSION 1.0.1
 .GUID 50db3d8c-c711-4c50-8396-3ca68b01b27d
 .AUTHOR Giovanni Solone
 .TAGS powershell entra microsoft graph devices groups
@@ -28,11 +28,13 @@ Runs the script interactively, allowing you to view the results.
 Runs the script and exports the results to a CSV file.
 .NOTES
 Credits:
-https://www.reddit.com/r/PowerShell/comments/1c814xa/using_graph_api_via_powershell_to_report_entra/
 https://o365reports.com/2023/04/18/get-azure-ad-devices-report-using-powershell/
+https://www.reddit.com/r/PowerShell/comments/1c814xa/using_graph_api_via_powershell_to_report_entra/
 
 Modification History:
--
+v1.0.1 (2025-07-17): Added a message to show how many devices were found in the group.
+                     Added new empty lines to improve readability.
+					 Results are now sorted by display name.
 #>
 
 param (
@@ -53,11 +55,12 @@ try {
 }
 
 $group = Get-MgGroup -GroupId $groupId -ErrorAction Stop
-Write-Host "Group $groupId ($($group.DisplayName))"
-
 $devices = Get-MgGroupMember -GroupId $groupId -All
 $results = @()
 $counter = 0
+
+Write-Host "`nGroup $groupId ($($group.DisplayName))" -ForegroundColor Yellow
+Write-Host "Found $($devices.Count) devices in '$($group.DisplayName)', processing ...`n" -ForegroundColor Cyan
 
 foreach ($device in $devices) {
     $props = $device.AdditionalProperties
@@ -85,7 +88,7 @@ foreach ($device in $devices) {
     $counter++
 }
 
-$results | Format-Table -AutoSize
+$results | Sort-Object -Property DisplayName | Format-Table -AutoSize
 
 if ($ExportCSV) {
     $CSVName = $group.DisplayName -replace '[^a-zA-Z0-9]', '_'
