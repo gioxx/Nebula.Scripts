@@ -25,7 +25,7 @@ Each remediation typically includes:
 - `*_Remediation.ps1`: Applies the necessary fix if the device is non-compliant.
 
 These scripts are not published to the PowerShell Gallery (because obviously not suitable) and are meant to be downloaded directly from this repository or packaged for deployment in Microsoft Intune.  
-Within the detection and remediation scripts you will always be able to find the header within which I will try to include all the basic information to understand the purpose and how to use the _pair of scripts_. Please [open an issue](issues/new) in case something is unclear or completely missing in the scripts.
+Within the detection and remediation scripts you will always be able to find the header within which I will try to include all the basic information to understand the purpose and how to use the _pair of scripts_. Please [open an issue](https://github.com/gioxx/Nebula.Scripts/issues/new) in case something is unclear or completely missing in the scripts.
 
 ---
 
