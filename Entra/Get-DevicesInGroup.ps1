@@ -7,7 +7,7 @@
 .PROJECTURI https://github.com/gioxx/Nebula.Scripts/Entra/Get-DevicesInGroup.ps1
 #>
 
-# Requires -Version 7.0
+#Requires -Version 7.0
 
 <#
 .SYNOPSIS
