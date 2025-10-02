@@ -107,7 +107,7 @@ try {
 
     # Resolve input file path
     $InputFile = Resolve-Path $InputFile -ErrorAction Stop
-    Write-Host "Processing file: $InputFile"
+    Write-Verbose "Processing file: $InputFile"
 
     # Determine output file
     if (-not $OutputFile) {
@@ -115,7 +115,7 @@ try {
         $OutputFile = [System.IO.Path]::ChangeExtension($InputFile, $extension)
     }
 
-    Write-Host "Output will be: $OutputFile"
+    Write-Verbose "Output will be: $OutputFile"
 
     # Remove existing output file
     if (Test-Path $OutputFile) {
@@ -135,12 +135,12 @@ try {
     if ($OutputFormat -eq 'JPG') {
         $inkscapeArgs += '--export-background=white'
         $inkscapeArgs += '--export-background-opacity=1'
-        Write-Host "JPG format: Adding white background to remove transparency"
+        Write-Verbose "JPG format: Adding white background to remove transparency"
     }
 
     $inkscapeArgs += $InputFile
 
-    Write-Host "Executing: `"$InkscapePath`" $($inkscapeArgs -join ' ')"
+    Write-Verbose "Executing: `"$InkscapePath`" $($inkscapeArgs -join ' ')"
     & "$InkscapePath" $inkscapeArgs 2>$null
 
     # Inkscape often returns exit code 1 even on success, so we check file creation instead
