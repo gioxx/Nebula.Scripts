@@ -11,6 +11,7 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 |------------------------|------------------------------------------------------------------|--------------|
 | `Convert-SVG`  | Converts SVG files to PNG or JPG format using Inkscape. | [View on PSGallery](https://www.powershellgallery.com/packages/Convert-SVG) |
 | `Get-DevicesInGroup`  | View information about devices in an Entra group. | [View on PSGallery](https://www.powershellgallery.com/packages/Get-DevicesInGroup) |
+| `Get-IntuneApps`  | View information about applications available on Intune. | [View on PSGallery](https://www.powershellgallery.com/packages/Get-IntuneApps) |
 | `Remove-macOS-OldIntuneApps`  | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps) |
 | `Remove-OldPSModules`  | Removes all but the latest installed version of each PS module. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules) |
 
