@@ -7,13 +7,13 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 
 ## 📦 Available Scripts
 
-| Script Name            | Description                                                      | Gallery Link |
-|------------------------|------------------------------------------------------------------|--------------|
-| `Convert-SVG`  | Converts SVG files to PNG or JPG format using Inkscape. | [View on PSGallery](https://www.powershellgallery.com/packages/Convert-SVG) |
-| `Get-DevicesInGroup`  | View information about devices in an Entra group. | [View on PSGallery](https://www.powershellgallery.com/packages/Get-DevicesInGroup) |
-| `Get-IntuneApps`  | View information about applications available on Intune. | [View on PSGallery](https://www.powershellgallery.com/packages/Get-IntuneApps) |
-| `Remove-macOS-OldIntuneApps`  | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps) |
-| `Remove-OldPSModules`  | Removes all but the latest installed version of each PS module. | [View on PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules) |
+| Script Name | Description |
+|------------------------|------------------------------------------------------------------|
+| `Convert-SVG` | Converts SVG files to PNG or JPG format using Inkscape ([<img src="assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> PSGallery](https://www.powershellgallery.com/packages/Convert-SVG)) |
+| `Get-DevicesInGroup` | View information about devices in an Entra group ([<img src="assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> PSGallery](https://www.powershellgallery.com/packages/Get-DevicesInGroup)) |
+| `Get-IntuneApps` | View information about applications available on Intune ([<img src="assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> PSGallery](https://www.powershellgallery.com/packages/Get-IntuneApps)) |
+| `Remove-macOS-OldIntuneApps` | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions ([<img src="assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps)) |
+| `Remove-OldPSModules` | Removes all but the latest installed version of each PS module ([<img src="assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules)) |
 
 More scripts will be added over time.
 
