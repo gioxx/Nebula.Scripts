@@ -19,13 +19,13 @@ More scripts will be added over time.
 ### 🗃️ Deprecated Scripts
 
 > [!WARNING]  
-> Deprecated scripts will no longer receive updates on PowerShell Gallery.  
+> **Deprecated scripts will no longer receive updates on PowerShell Gallery**.  
 > Development will continue through functions included in the module.
 
-| Script Name | <img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> | Description |
-|------------------------|------------------------------------------------------------------|------------------------------------------------------------------|
-| `Get-DevicesInGroup` | [<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery">](https://www.powershellgallery.com/packages/Get-DevicesInGroup) | Deprecated: functionality is now available natively in **Nebula.Core** via `Get-EntraGroupDevice` ([documentation](https://kb.gioxx.org/Nebula/Core/usage/groups/#get-entragroupdevice)). |
-| `Remove-OldPSModules` | [<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery">](https://www.powershellgallery.com/packages/Remove-OldPSModules) | Deprecated: functionality is now available natively in **Nebula.Tools** via `Remove-OldModuleVersions` ([documentation](https://kb.gioxx.org/Nebula/Tools/usage/modules/#remove-oldmoduleversions)). |
+| Script Name | Description |
+|------------------------|------------------------------------------------------------------|
+| `Get-DevicesInGroup` [<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery">](https://www.powershellgallery.com/packages/Get-DevicesInGroup) | Deprecated: functionality is now available natively in **Nebula.Core** via `Get-EntraGroupDevice` ([documentation](https://kb.gioxx.org/Nebula/Core/usage/groups/#get-entragroupdevice)). |
+| `Remove-OldPSModules` [<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery">](https://www.powershellgallery.com/packages/Remove-OldPSModules) | Deprecated: functionality is now available natively in **Nebula.Tools** via `Remove-OldModuleVersions` ([documentation](https://kb.gioxx.org/Nebula/Tools/usage/modules/#remove-oldmoduleversions)). |
 
 
 ---
