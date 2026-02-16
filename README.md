@@ -11,12 +11,22 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 |------------------------|------------------------------------------------------------------|
 | `Convert-SVG` | Converts SVG files to PNG or JPG format using Inkscape (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Convert-SVG)) |
 | `Download-FreeFileSync` | Checks for available FreeFileSync updates for Microsoft Windows and update it if available. (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Download-FreeFileSync)) |
-| `Get-DevicesInGroup` | View information about devices in an Entra group (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-DevicesInGroup)) |
 | `Get-IntuneApps` | View information about applications available on Intune (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-IntuneApps)) |
 | `Remove-macOS-OldIntuneApps` | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps)) |
-| `Remove-OldPSModules` | Removes all but the latest installed version of each PS module (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Remove-OldPSModules)) |
 
 More scripts will be added over time.
+
+### 🗃️ Deprecated Scripts
+
+> [!WARNING]  
+> Deprecated scripts will no longer receive updates on PowerShell Gallery.  
+> Development will continue through functions included in the module.
+
+| Script Name | PSGallery | Description |
+|------------------------|------------------------------------------------------------------|------------------------------------------------------------------|
+| `Get-DevicesInGroup` | [<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery">](https://www.powershellgallery.com/packages/Get-DevicesInGroup) | Deprecated: functionality is now available natively in **Nebula.Core** via `Get-EntraGroupDevice` ([documentation](https://kb.gioxx.org/Nebula/Core/usage/groups/#get-entragroupdevice)). |
+| `Remove-OldPSModules` | [<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery">](https://www.powershellgallery.com/packages/Remove-OldPSModules) | Deprecated: functionality is now available natively in **Nebula.Tools** via `Remove-OldModuleVersions` ([documentation](https://kb.gioxx.org/Nebula/Tools/usage/modules/#remove-oldmoduleversions)). |
+
 
 ---
 
