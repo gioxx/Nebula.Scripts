@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.2
+.VERSION 1.0.3
 .GUID d2ace103-adeb-47be-80cd-2180db770ece
 .AUTHOR Giovanni Solone
 .TAGS powershell intune macos apps microsoft graph cleanup duplicates
@@ -27,6 +27,9 @@ Runs the script interactively, allowing you to review duplicates and move assign
 .\Remove-macOS-OldIntuneApps.ps1 -RemoveIfUnassigned -Force
 Removes old versions of macOS apps that are unassigned without prompting for confirmation.
 .NOTES
+v1.0.3 (2026-03-19)
+	Changed Graph module validation to require only a minimum supported version (2.35.0) instead of forcing the latest PSGallery release.
+	Kept update discovery messaging when newer versions are available, but allow continuing when installed modules already meet the minimum requirement.
 v1.0.2 (2026-03-02)
 	Removed explicit Beta module import to prevent Microsoft.Graph.Authentication assembly conflicts after module updates.
 	Switched to stable Mg cmdlets and added -All pagination where needed.
@@ -45,6 +48,7 @@ param (
 )
 
 function Test-RequiredGraphCmdlets {
+	$minimumSupportedVersion = [version]'2.35.0'
 	$modulesToManage = @(
 		'Microsoft.Graph.Authentication',
 		'Microsoft.Graph.Devices.CorporateManagement'
@@ -63,7 +67,8 @@ function Test-RequiredGraphCmdlets {
 	$missingCmdlets = $requiredCmdlets | Where-Object { -not (Get-Command -Name $_ -ErrorAction SilentlyContinue) }
 
 	$missingModules = @()
-	$modulesToUpdate = @()
+	$modulesBelowMinimum = @()
+	$modulesWithAvailableUpdates = @()
 
 	foreach ($moduleName in $modulesToManage) {
 		$installedModule = Get-Module -ListAvailable -Name $moduleName |
@@ -75,10 +80,18 @@ function Test-RequiredGraphCmdlets {
 			continue
 		}
 
+		if ([version]$installedModule.Version -lt $minimumSupportedVersion) {
+			$modulesBelowMinimum += [PSCustomObject]@{
+				Name = $moduleName
+				InstalledVersion = $installedModule.Version
+				MinimumVersion = $minimumSupportedVersion
+			}
+		}
+
 		try {
 			$galleryModule = Find-Module -Name $moduleName -Repository PSGallery -ErrorAction Stop
 			if ([version]$galleryModule.Version -gt [version]$installedModule.Version) {
-				$modulesToUpdate += [PSCustomObject]@{
+				$modulesWithAvailableUpdates += [PSCustomObject]@{
 					Name = $moduleName
 					InstalledVersion = $installedModule.Version
 					LatestVersion = $galleryModule.Version
@@ -90,7 +103,9 @@ function Test-RequiredGraphCmdlets {
 		}
 	}
 
-	if (-not $missingCmdlets -and -not $missingModules -and -not $modulesToUpdate) {
+	$requiresInstallOrUpdate = ($missingCmdlets -or $missingModules -or $modulesBelowMinimum)
+
+	if (-not $requiresInstallOrUpdate -and -not $modulesWithAvailableUpdates) {
 		return
 	}
 
@@ -104,14 +119,23 @@ function Test-RequiredGraphCmdlets {
 		$missingModules | ForEach-Object { Write-Host "- $_" -ForegroundColor Yellow }
 	}
 
-	if ($modulesToUpdate) {
+	if ($modulesBelowMinimum) {
+		Write-Host "`nMicrosoft Graph modules below minimum supported version $minimumSupportedVersion detected:" -ForegroundColor Yellow
+		$modulesBelowMinimum | Format-Table Name, InstalledVersion, MinimumVersion -AutoSize
+	}
+
+	if ($modulesWithAvailableUpdates) {
 		Write-Host "`nMicrosoft Graph module updates are available:" -ForegroundColor Yellow
-		$modulesToUpdate | Format-Table Name, InstalledVersion, LatestVersion -AutoSize
+		$modulesWithAvailableUpdates | Format-Table Name, InstalledVersion, LatestVersion -AutoSize
+	}
+
+	if (-not $requiresInstallOrUpdate) {
+		return
 	}
 
 	$choice = Read-Host "`nInstall/update required Microsoft Graph modules now? [y/n] (default: y)"
 	if (-not [string]::IsNullOrWhiteSpace($choice) -and $choice.Trim().ToLower() -ne 'y') {
-		throw "Cannot continue without required Microsoft Graph modules and updates."
+		throw "Cannot continue without required Microsoft Graph modules or minimum supported versions."
 	}
 
 	foreach ($moduleName in $missingModules) {
@@ -119,14 +143,33 @@ function Test-RequiredGraphCmdlets {
 		Install-Module -Name $moduleName -Scope CurrentUser -Repository PSGallery -AllowClobber -Force -ErrorAction Stop
 	}
 
-	foreach ($moduleInfo in $modulesToUpdate) {
-		Write-Host "Updating module $($moduleInfo.Name) from $($moduleInfo.InstalledVersion) to $($moduleInfo.LatestVersion)..." -ForegroundColor Cyan
+	foreach ($moduleInfo in $modulesBelowMinimum) {
+		Write-Host "Updating module $($moduleInfo.Name) from $($moduleInfo.InstalledVersion) to at least $($moduleInfo.MinimumVersion)..." -ForegroundColor Cyan
 		Update-Module -Name $moduleInfo.Name -Scope CurrentUser -Force -ErrorAction Stop
 	}
 
 	$stillMissing = $requiredCmdlets | Where-Object { -not (Get-Command -Name $_ -ErrorAction SilentlyContinue) }
 	if ($stillMissing) {
 		throw "Required Graph cmdlets are still unavailable after install/update. Try a new PowerShell session."
+	}
+
+	$stillBelowMinimum = foreach ($moduleName in $modulesToManage) {
+		$installedModule = Get-Module -ListAvailable -Name $moduleName |
+			Sort-Object -Property Version -Descending |
+			Select-Object -First 1
+
+		if ($installedModule -and [version]$installedModule.Version -lt $minimumSupportedVersion) {
+			[PSCustomObject]@{
+				Name = $moduleName
+				InstalledVersion = $installedModule.Version
+				MinimumVersion = $minimumSupportedVersion
+			}
+		}
+	}
+
+	if ($stillBelowMinimum) {
+		$stillBelowMinimum | Format-Table Name, InstalledVersion, MinimumVersion -AutoSize
+		throw "Microsoft Graph modules are still below the minimum supported version after update."
 	}
 }
 
