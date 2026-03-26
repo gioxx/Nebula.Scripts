@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.2
+.VERSION 1.0.4
 .GUID 50db3d8c-c711-4c50-8396-3ca68b01b27d
 .AUTHOR Giovanni Solone
 .TAGS powershell entra microsoft graph devices groups
@@ -32,6 +32,8 @@ https://o365reports.com/2023/04/18/get-azure-ad-devices-report-using-powershell/
 https://www.reddit.com/r/PowerShell/comments/1c814xa/using_graph_api_via_powershell_to_report_entra/
 
 Modification History:
+v1.0.4 (2026-03-26): Replaced the warning with a more visible deprecation banner and clarified that the script will no longer be updated.
+v1.0.3 (2026-03-26): Added a deprecation banner pointing users to Nebula.Core Get-EntraGroupDevice.
 v1.0.2 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 v1.0.1 (2025-07-17): Added a message to show how many devices were found in the group.
                      Added new empty lines to improve readability.
@@ -43,6 +45,21 @@ param (
     [string] $GroupName,
     [switch] $ExportCSV
 )
+
+$deprecationMessage = @(
+    "Deprecated: functionality is now available natively in Nebula.Core via Get-EntraGroupDevice."
+    "Documentation: https://kb.gioxx.org/Nebula/Core/usage/groups/#get-entragroupdevice"
+    "This script will no longer be updated and may not stay aligned with future improvements to the module command."
+)
+
+Write-Host ""
+Write-Host "****************************************************************************************************************" -ForegroundColor DarkYellow
+foreach ($line in $deprecationMessage) {
+    Write-Host "* $line" -ForegroundColor Yellow
+}
+Write-Host "****************************************************************************************************************" -ForegroundColor DarkYellow
+Write-Host ""
+Write-Warning "Deprecated script in use. See Nebula.Core Get-EntraGroupDevice for the maintained implementation."
 
 if (-not (Get-MgContext)) {
     Connect-MgGraph -Scopes "Group.Read.All", "Device.Read.All", "Directory.Read.All" -NoWelcome -ErrorAction Stop

@@ -66,8 +66,8 @@ Known Issue: Inkscape may return exit code 1 even on successful conversions.
 This script checks for actual file creation to determine success.
 
 Modification History:
-v1.0.0 (2024-10-02): Initial release.
 v1.0.1 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
+v1.0.0 (2024-10-02): Initial release.
 #>
 
 [CmdletBinding()]

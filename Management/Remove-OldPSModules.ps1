@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.1.1
+.VERSION 1.1.2
 .GUID 887af808-3b0a-4945-b7c7-7589f7bc7953
 .AUTHOR Giovanni Solone
 .TAGS powershell modules cleanup
@@ -19,10 +19,27 @@ This script identifies all installed PowerShell modules and removes all but the 
 Runs the script and removes outdated module versions.
 .NOTES
 Modification History:
-v1.0.0 (2025-06-04): Initial release.
-v1.1.0 (2025-10-02): Fixed #Requirements (#Requires -Version 7.0).
+v1.1.2 (2026-03-26): Added a visible deprecation banner and clarified that the script will no longer be updated.
 v1.1.1 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
+v1.1.0 (2025-10-02): Fixed #Requirements (#Requires -Version 7.0).
+v1.0.0 (2025-06-04): Initial release.
 #>
+
+# Deprecated banner
+$deprecationMessage = @(
+    "Deprecated: functionality is now available natively in Nebula.Tools via Remove-OldModuleVersions."
+    "Documentation: https://kb.gioxx.org/Nebula/Tools/usage/modules/#remove-oldmoduleversions"
+    "This script will no longer be updated and may not stay aligned with future improvements to the module command."
+)
+
+Write-Host ""
+Write-Host "****************************************************************************************************************" -ForegroundColor DarkYellow
+foreach ($line in $deprecationMessage) {
+    Write-Host "* $line" -ForegroundColor Yellow
+}
+Write-Host "****************************************************************************************************************" -ForegroundColor DarkYellow
+Write-Host ""
+Write-Warning "Deprecated script in use. See Nebula.Tools Remove-OldModuleVersions for the maintained implementation."
 
 # Ensure PSResourceGet is available
 try {
