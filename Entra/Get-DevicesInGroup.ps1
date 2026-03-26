@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.0.1
+.VERSION 1.0.2
 .GUID 50db3d8c-c711-4c50-8396-3ca68b01b27d
 .AUTHOR Giovanni Solone
 .TAGS powershell entra microsoft graph devices groups
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Entra/Get-DevicesInGroup.ps1
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Entra/Get-DevicesInGroup.ps1
 #>
 
 #Requires -Version 7.0
@@ -32,6 +32,7 @@ https://o365reports.com/2023/04/18/get-azure-ad-devices-report-using-powershell/
 https://www.reddit.com/r/PowerShell/comments/1c814xa/using_graph_api_via_powershell_to_report_entra/
 
 Modification History:
+v1.0.2 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 v1.0.1 (2025-07-17): Added a message to show how many devices were found in the group.
                      Added new empty lines to improve readability.
 					 Results are now sorted by display name.

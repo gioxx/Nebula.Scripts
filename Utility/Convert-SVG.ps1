@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.0.0
+.VERSION 1.0.1
 .GUID b51d2447-b40d-47de-8ca5-8583db061ba4
 .AUTHOR Giovanni Solone
 .TAGS powershell inkscape images conversion svg png jpg
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Utility/Convert-SVG.ps1
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Utility/Convert-SVG.ps1
 #>
 
 #Requires -Version 7.0
@@ -67,6 +67,7 @@ This script checks for actual file creation to determine success.
 
 Modification History:
 v1.0.0 (2024-10-02): Initial release.
+v1.0.1 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 #>
 
 [CmdletBinding()]

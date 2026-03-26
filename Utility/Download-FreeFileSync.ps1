@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.1.1
+.VERSION 1.1.2
 .GUID 777f62f2-236d-4aff-9fe1-eaf88d1e864a
 .AUTHOR Giovanni Solone
 .TAGS powershell freefilesync download tools
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Utility/Download-FreeFileSync.ps1
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Utility/Download-FreeFileSync.ps1
 #>
 
 #Requires -Version 7.0
@@ -25,6 +25,7 @@ Modification History:
 v1.0.0 (2025-12-04): Initial release.
 v1.1.0 (2026-03-19): Download setup to the system temp folder and remove it only after user confirmation.
 v1.1.1 (2026-03-19): Wait for the installer process to exit and remove the setup automatically when possible.
+v1.1.2 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 #>
 
 $FFS_URL = "https://freefilesync.org/download.php" # Define the URL of the download page

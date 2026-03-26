@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.0.3
+.VERSION 1.0.4
 .GUID d2ace103-adeb-47be-80cd-2180db770ece
 .AUTHOR Giovanni Solone
 .TAGS powershell intune macos apps microsoft graph cleanup duplicates
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Intune/Remove-macOS-OldIntuneApps.ps1
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Intune/Remove-macOS-OldIntuneApps.ps1
 #>
 
 #Requires -Version 7.0
@@ -27,6 +27,8 @@ Runs the script interactively, allowing you to review duplicates and move assign
 .\Remove-macOS-OldIntuneApps.ps1 -RemoveIfUnassigned -Force
 Removes old versions of macOS apps that are unassigned without prompting for confirmation.
 .NOTES
+v1.0.4 (2026-03-26)
+	Updated PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 v1.0.3 (2026-03-19)
 	Changed Graph module validation to require only a minimum supported version (2.35.0) instead of forcing the latest PSGallery release.
 	Kept update discovery messaging when newer versions are available, but allow continuing when installed modules already meet the minimum requirement.

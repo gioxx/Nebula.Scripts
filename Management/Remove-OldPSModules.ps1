@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.1.0
+.VERSION 1.1.1
 .GUID 887af808-3b0a-4945-b7c7-7589f7bc7953
 .AUTHOR Giovanni Solone
 .TAGS powershell modules cleanup
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Management/Remove-OldPSModules.ps1
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Management/Remove-OldPSModules.ps1
 #>
 
 #Requires -Version 7.0
@@ -17,6 +17,11 @@ This script identifies all installed PowerShell modules and removes all but the 
 .EXAMPLE
 .\Remove-OldPSModules.ps1
 Runs the script and removes outdated module versions.
+.NOTES
+Modification History:
+v1.0.0 (2025-06-04): Initial release.
+v1.1.0 (2025-10-02): Fixed #Requirements (#Requires -Version 7.0).
+v1.1.1 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 #>
 
 # Ensure PSResourceGet is available

@@ -1,10 +1,10 @@
 <#PSScriptInfo
-.VERSION 1.0.1
+.VERSION 1.0.2
 .GUID 236e8d45-0d5e-4c27-becd-50b512c7e87d
 .AUTHOR Giovanni Solone
 .TAGS powershell intune apps windows macos ios android microsoft graph
 .LICENSEURI https://opensource.org/licenses/MIT
-.PROJECTURI https://github.com/gioxx/Nebula.Scripts/Intune/Get-IntuneApps.ps1
+.PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Intune/Get-IntuneApps.ps1
 #>
 
 #Requires -Version 7.0
@@ -29,15 +29,14 @@ If specified, dumps the full details of the first application for debugging purp
 .EXAMPLE
 .\IntuneApps.ps1 -GridView
 .NOTES
-Date: 2025-04-04
-
 Credits:
 https://github.com/andrew-s-taylor/public/blob/main/Powershell%20Scripts/Intune/get-intune-apps.ps1
 https://www.powershellgallery.com/packages/get-intune-apps
 
 Modification History:
-- 2025-10-24: Removed deprecated cmdlets, fallback to get apps version.
-- 2025-04-04: Initial version.
+v1.0.2 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
+v1.0.1 (2025-10-24): Removed deprecated cmdlets, fallback to get apps version.
+v1.0.0 (2025-04-04): Initial version.
 #>
 
 param (
