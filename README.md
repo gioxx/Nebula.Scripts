@@ -19,14 +19,6 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 
 More scripts will be added over time.
 
-### Credits
-
-`Get-RclonePassword` is based on community research and implementation notes from:
-
-- https://forum.rclone.org/t/get-password-and-salt-from-config/14788
-- https://forum.rclone.org/t/how-to-retrieve-a-crypt-password-from-a-config-file/20051
-- https://go.dev/play/p/IcRYDip3PnE
-
 ### 🗃️ Deprecated Scripts
 
 > [!WARNING]  
