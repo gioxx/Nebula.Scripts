@@ -14,9 +14,18 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 | `Download-WinSCP` | Checks for available WinSCP updates for Microsoft Windows and installs the latest version. (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Download-WinSCP)) |
 | `Download-WinSCPPortable` | Downloads the latest WinSCP Portable package and optionally WinSCPnet.dll. (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Download-WinSCPPortable)) |
 | `Get-IntuneApps` | View information about applications available on Intune (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-IntuneApps)) |
+| `Get-RclonePassword` | Reveals an rclone obscured password value when you already have the encoded text (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-RclonePassword)) |
 | `Remove-macOS-OldIntuneApps` | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps)) |
 
 More scripts will be added over time.
+
+### Credits
+
+`Get-RclonePassword` is based on community research and implementation notes from:
+
+- https://forum.rclone.org/t/get-password-and-salt-from-config/14788
+- https://forum.rclone.org/t/how-to-retrieve-a-crypt-password-from-a-config-file/20051
+- https://go.dev/play/p/IcRYDip3PnE
 
 ### 🗃️ Deprecated Scripts
 
