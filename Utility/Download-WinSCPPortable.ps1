@@ -1,11 +1,12 @@
 <#PSScriptInfo
-.VERSION 1.0.0
+.VERSION 1.1.0
 .GUID a3f9c812-5e2b-4d7a-b1f6-8c3e0d9a4b7e
 .AUTHOR Giovanni Solone
 .TAGS powershell winscp portable download tools
 .LICENSEURI https://opensource.org/licenses/MIT
 .PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Utility/Download-WinSCPPortable.ps1
 .RELEASENOTES
+v1.1.0 (2026-05-07): Added ShowProgress and switched extraction to a temporary folder workflow for more reliable file deployment. Preserve both WinSCPnet.dll variants for Windows PowerShell 5.1 and PowerShell 7.
 v1.0.0 (2026-03-26): Initial release.
 #>
 
@@ -18,20 +19,19 @@ Downloads the latest WinSCP Portable version (and optionally the .NET assembly /
 .DESCRIPTION
 This script checks the official WinSCP download page, retrieves the latest version number, and downloads
 the portable ZIP package directly from winscp.net by extracting the tokenized download URL from the
-download page. It extracts the contents directly into the destination folder. Optionally, the .NET
-assembly / COM library ZIP can also be downloaded, extracting only WinSCPnet.dll from the selected
-target framework folder (net40 by default, or netstandard2.0 if specified). If the destination folder
-already contains files from the same version, the download is skipped.
+download page. It extracts the contents into a temporary folder and copies them to the destination
+folder. Optionally, the .NET assembly / COM library ZIP can also be downloaded, preserving both
+WinSCPnet.dll variants so the portable layout works with Windows PowerShell 5.1 and PowerShell 7.
+If the destination folder already contains files from the same version, the download is skipped.
 
 .PARAMETER Destination
 The folder where the portable files will be extracted. Must be specified.
 
 .PARAMETER IncludeDotNet
-If specified, also downloads the .NET assembly / COM library package and extracts only WinSCPnet.dll.
+If specified, also downloads the .NET assembly / COM library package and extracts both WinSCPnet.dll variants.
 
-.PARAMETER DotNetTarget
-The target framework folder to extract WinSCPnet.dll from. Accepted values: net40, netstandard2.0.
-Defaults to net40.
+.PARAMETER ShowProgress
+If specified, displays additional progress information while downloading and extracting files.
 
 .EXAMPLE
 .\Download-WinSCPPortable.ps1 -Destination "C:\Tools\WinSCP"
@@ -39,11 +39,11 @@ Downloads the latest WinSCP portable package and extracts it to C:\Tools\WinSCP.
 
 .EXAMPLE
 .\Download-WinSCPPortable.ps1 -Destination "C:\Tools\WinSCP" -IncludeDotNet
-Downloads the portable package and extracts WinSCPnet.dll from net40 to C:\Tools\WinSCP.
+Downloads the portable package and extracts both WinSCPnet.dll variants to C:\Tools\WinSCP.
 
 .EXAMPLE
-.\Download-WinSCPPortable.ps1 -Destination "C:\Tools\WinSCP" -IncludeDotNet -DotNetTarget netstandard2.0
-Downloads the portable package and extracts WinSCPnet.dll from netstandard2.0 to C:\Tools\WinSCP.
+.\Download-WinSCPPortable.ps1 -Destination "C:\Tools\WinSCP" -IncludeDotNet -ShowProgress
+Downloads the portable package and shows additional progress details while extracting files.
 
 .NOTES
 [Reflection.Assembly]::LoadFile("C:\path\file.dll").ImageRuntimeVersion to check .NET version of a DLL file.
@@ -53,9 +53,117 @@ param (
     [Parameter(Mandatory = $true)]
     [string] $Destination,
     [switch] $IncludeDotNet,
-    [ValidateSet("net40", "netstandard2.0")]
-    [string] $DotNetTarget = "net40"
+    [switch] $ShowProgress
 )
+
+function Write-ProgressMessage {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Message
+    )
+
+    if ($ShowProgress) {
+        Write-Host $Message
+    }
+}
+
+function Resolve-DestinationPath {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Path
+    )
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return [System.IO.Path]::GetFullPath($Path)
+    }
+
+    $basePath = (Get-Location).ProviderPath
+    return [System.IO.Path]::GetFullPath((Join-Path -Path $basePath -ChildPath $Path))
+}
+
+function New-DirectoryIfMissing {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Path
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+}
+
+function New-TempExtractionFolder {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $Prefix
+    )
+
+    $tempRoot = [System.IO.Path]::GetTempPath()
+    $tempFolder = Join-Path $tempRoot ("{0}_{1}" -f $Prefix, [System.Guid]::NewGuid().ToString("N").Substring(0, 8))
+    New-Item -ItemType Directory -Path $tempFolder -Force | Out-Null
+    return $tempFolder
+}
+
+function Copy-FolderContentsWithRetry {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $SourceFolder,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DestinationFolder
+    )
+
+    $maxRetries = 3
+    $attempt = 0
+
+    while ($attempt -lt $maxRetries) {
+        try {
+            Copy-Item -Path (Join-Path $SourceFolder '*') -Destination $DestinationFolder -Recurse -Force -ErrorAction Stop
+            return
+        }
+        catch {
+            $attempt++
+            if ($attempt -lt $maxRetries) {
+                Start-Sleep -Seconds 2
+            }
+            else {
+                throw
+            }
+        }
+    }
+}
+
+function Copy-FileWithRetry {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $SourceFile,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DestinationFile
+    )
+
+    New-DirectoryIfMissing -Path (Split-Path -Path $DestinationFile -Parent)
+
+    $maxRetries = 3
+    $attempt = 0
+
+    while ($attempt -lt $maxRetries) {
+        try {
+            Copy-Item -LiteralPath $SourceFile -Destination $DestinationFile -Force -ErrorAction Stop
+            return
+        }
+        catch {
+            $attempt++
+            if ($attempt -lt $maxRetries) {
+                Write-ProgressMessage "  $([System.IO.Path]::GetFileName($DestinationFile)) is locked, retrying in 3 seconds... (attempt $attempt/$maxRetries)"
+                Start-Sleep -Seconds 3
+            }
+            else {
+                throw
+            }
+        }
+    }
+}
 
 function Get-WinSCPVersion {
     $WinSCP_URL = "https://winscp.net/eng/download.php"
@@ -93,7 +201,7 @@ function Get-WinSCPPackage {
     $zipFile = Join-Path $tempPath $FileName
 
     $downloadPageUrl = "https://winscp.net/download/$FileName/download"
-    Write-Host "Downloading $DisplayName..."
+    Write-ProgressMessage "Downloading $DisplayName..."
 
     # Load the download page to extract the tokenized URL
     $response = Invoke-WebRequest -Uri $downloadPageUrl -UseBasicParsing -SessionVariable session -MaximumRedirection 10
@@ -103,7 +211,7 @@ function Get-WinSCPPackage {
         exit 1
     }
     $tokenizedUrl = "https://winscp.net" + $matches[0]
-    Write-Host "Token URL: $tokenizedUrl"
+    Write-ProgressMessage "Token URL: $tokenizedUrl"
 
     # Download the actual file using the tokenized URL and the session cookie
     Invoke-WebRequest -Uri $tokenizedUrl -OutFile $zipFile -UseBasicParsing -WebSession $session
@@ -119,97 +227,90 @@ function Get-WinSCPPackage {
     return $zipFile
 }
 
-function Expand-PortableZip {
+function Expand-DotNetDll {
     param (
         [string] $ZipPath,
         [string] $Destination
     )
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-    $entries = $zip.Entries | Where-Object { -not $_.FullName.EndsWith('/') }
+    $tempFolder = New-TempExtractionFolder -Prefix 'WinSCP_Automation'
 
-    # Read all entries into memory first, then close the ZIP before writing to disk
-    $fileData = @()
-    foreach ($entry in $entries) {
-        $ms = [System.IO.MemoryStream]::new()
-        $entryStream = $entry.Open()
-        $entryStream.CopyTo($ms)
-        $entryStream.Close()
-        $fileData += @{ Name = (Split-Path $entry.FullName -Leaf); Bytes = $ms.ToArray() }
-        $ms.Close()
-    }
-    $zip.Dispose()
+    function Resolve-SourceFile {
+        param (
+            [Parameter(Mandatory = $true)]
+            [string] $BasePath,
 
-    foreach ($file in $fileData) {
-        $targetFile = Join-Path $Destination $file.Name
-        [System.IO.File]::WriteAllBytes($targetFile, $file.Bytes)
-        Write-Host "  Extracted: $($file.Name)"
-    }
-}
+            [Parameter(Mandatory = $true)]
+            [string[]] $Candidates
+        )
 
-function Expand-DotNetDll {
-    param (
-        [string] $ZipPath,
-        [string] $Destination,
-        [string] $DotNetTarget
-    )
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-
-    $entryPath = "$DotNetTarget/WinSCPnet.dll"
-    $entry = $zip.Entries | Where-Object { $_.FullName -eq $entryPath } | Select-Object -First 1
-
-    if ($null -eq $entry) {
-        $zip.Dispose()
-        Write-Error "WinSCPnet.dll not found in '$DotNetTarget' inside the ZIP archive."
-        exit 1
-    }
-
-    # Read into memory first, then close ZIP before writing to disk
-    $ms = [System.IO.MemoryStream]::new()
-    $entryStream = $entry.Open()
-    $entryStream.CopyTo($ms)
-    $entryStream.Close()
-    $zip.Dispose()
-
-    $targetFile = Join-Path $Destination "WinSCPnet.dll"
-
-    # Retry up to 3 times if the file is locked
-    $maxRetries = 3
-    $attempt = 0
-    $success = $false
-    while (-not $success -and $attempt -lt $maxRetries) {
-        try {
-            [System.IO.File]::WriteAllBytes($targetFile, $ms.ToArray())
-            $success = $true
-        }
-        catch {
-            $attempt++
-            if ($attempt -lt $maxRetries) {
-                Write-Host "  WinSCPnet.dll is locked, retrying in 3 seconds... (attempt $attempt/$maxRetries)"
-                Start-Sleep -Seconds 3
-            }
-            else {
-                $ms.Close()
-                Write-Error "Could not write WinSCPnet.dll after $maxRetries attempts. The file may be in use by another process: $targetFile"
-                exit 1
+        foreach ($candidate in $Candidates) {
+            $candidatePath = Join-Path $BasePath $candidate
+            if (Test-Path -LiteralPath $candidatePath) {
+                return (Get-Item -LiteralPath $candidatePath).FullName
             }
         }
+
+        return $null
     }
 
-    $ms.Close()
-    Write-Host "  Extracted: WinSCPnet.dll (from $DotNetTarget)"
+    try {
+        Expand-Archive -Path $ZipPath -DestinationPath $tempFolder -Force
+
+        $rootSource = Resolve-SourceFile -BasePath $tempFolder -Candidates @(
+            'WinSCPnet.dll'
+            'net40\WinSCPnet.dll'
+        )
+
+        if (-not $rootSource) {
+            $rootSource = Get-ChildItem -Path $tempFolder -Filter 'WinSCPnet.dll' -Recurse -File |
+                Where-Object { $_.FullName -notmatch 'netstandard2\.0' } |
+                Select-Object -First 1 -ExpandProperty FullName
+        }
+
+        if (-not $rootSource) {
+            Write-Error "WinSCPnet.dll not found in the ZIP archive."
+            exit 1
+        }
+
+        Copy-FileWithRetry -SourceFile $rootSource -DestinationFile (Join-Path $Destination 'WinSCPnet.dll')
+        Write-ProgressMessage "  Extracted: WinSCPnet.dll"
+
+        $netstandardSource = Resolve-SourceFile -BasePath $tempFolder -Candidates @(
+            'netstandard2.0\WinSCPnet.dll'
+        )
+
+        if (-not $netstandardSource) {
+            $netstandardSource = Get-ChildItem -Path $tempFolder -Filter 'WinSCPnet.dll' -Recurse -File |
+                Where-Object { $_.FullName -match 'netstandard2\.0' } |
+                Select-Object -First 1 -ExpandProperty FullName
+        }
+
+        if (-not $netstandardSource) {
+            Write-Error "WinSCPnet.dll not found under netstandard2.0 in the ZIP archive."
+            exit 1
+        }
+
+        Copy-FileWithRetry -SourceFile $netstandardSource -DestinationFile (Join-Path $Destination 'netstandard2.0\WinSCPnet.dll')
+        Write-ProgressMessage "  Extracted: netstandard2.0\WinSCPnet.dll"
+    }
+    finally {
+        if (Test-Path -LiteralPath $tempFolder) {
+            Remove-Item -LiteralPath $tempFolder -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # --- Main ---
+
+$Destination = Resolve-DestinationPath -Path $Destination
 
 $version = Get-WinSCPVersion
 Write-Output "Latest WinSCP version: $version"
 
 # Create destination folder if it doesn't exist
-if (-not (Test-Path $Destination)) {
+if (-not (Test-Path -LiteralPath $Destination)) {
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-    Write-Output "Created destination folder: $Destination"
+    Write-ProgressMessage "Created destination folder: $Destination"
 }
 
 # Portable package
@@ -217,12 +318,21 @@ $exePath = Join-Path $Destination "WinSCP.exe"
 if (Test-AlreadyUpToDate -FilePath $exePath -Version $version) {
     Write-Output "WinSCP $version portable is already up to date in: $Destination"
 }
-else {
-    $zipFile = Get-WinSCPPackage -Version $version -FileName "WinSCP-$version-Portable.zip" -DisplayName "WinSCP $version Portable"
-    Write-Output "Extracting to: $Destination"
-    Expand-PortableZip -ZipPath $zipFile -Destination $Destination
-    Remove-Item -LiteralPath $zipFile -Force
-    Write-Output "Portable package ready in: $Destination"
+    else {
+        $zipFile = Get-WinSCPPackage -Version $version -FileName "WinSCP-$version-Portable.zip" -DisplayName "WinSCP $version Portable"
+        Write-ProgressMessage "Extracting to: $Destination"
+        $tempFolder = New-TempExtractionFolder -Prefix 'WinSCP_Portable'
+        try {
+            Expand-Archive -Path $zipFile -DestinationPath $tempFolder -Force
+            Copy-FolderContentsWithRetry -SourceFolder $tempFolder -DestinationFolder $Destination
+        Write-Output "Portable package ready in: $Destination"
+    }
+    finally {
+        if (Test-Path -LiteralPath $tempFolder) {
+            Remove-Item -LiteralPath $tempFolder -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Remove-Item -LiteralPath $zipFile -Force -ErrorAction SilentlyContinue
+    }
 }
 
 # .NET assembly / COM library (optional)
@@ -233,9 +343,9 @@ if ($IncludeDotNet) {
     }
     else {
         $zipFile = Get-WinSCPPackage -Version $version -FileName "WinSCP-$version-Automation.zip" -DisplayName "WinSCP $version .NET assembly / COM library"
-        Write-Output "Extracting WinSCPnet.dll from $DotNetTarget to: $Destination"
-        Expand-DotNetDll -ZipPath $zipFile -Destination $Destination -DotNetTarget $DotNetTarget
-        Remove-Item -LiteralPath $zipFile -Force
+        Write-ProgressMessage "Extracting WinSCPnet.dll variants to: $Destination"
+        Expand-DotNetDll -ZipPath $zipFile -Destination $Destination
+        Remove-Item -LiteralPath $zipFile -Force -ErrorAction SilentlyContinue
         Write-Output ".NET assembly ready in: $Destination"
     }
 }
