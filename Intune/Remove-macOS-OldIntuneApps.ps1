@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.4
+.VERSION 1.0.5
 .GUID d2ace103-adeb-47be-80cd-2180db770ece
 .AUTHOR Giovanni Solone
 .TAGS powershell intune macos apps microsoft graph cleanup duplicates
@@ -20,6 +20,8 @@ old versions if they are unassigned.
 When specified, the script will remove old versions of apps that are unassigned.
 .PARAMETER Force
 When specified, the script will not prompt for confirmation before removing apps.
+.PARAMETER ShowGraphUpdates
+When specified, the script will also report newer Microsoft Graph module versions available from PSGallery.
 .EXAMPLE
 .\Remove-macOS-OldIntuneApps.ps1
 Runs the script interactively, allowing you to review duplicates and move assignments.
@@ -27,6 +29,11 @@ Runs the script interactively, allowing you to review duplicates and move assign
 .\Remove-macOS-OldIntuneApps.ps1 -RemoveIfUnassigned -Force
 Removes old versions of macOS apps that are unassigned without prompting for confirmation.
 .NOTES
+v1.0.5 (2026-06-11)
+	Added a dedicated switch to show available Microsoft Graph module updates from PSGallery.
+	Improved version comparison so duplicate app cleanup picks the truly oldest bundle version.
+	Avoided repeating the unassigned warning when -RemoveIfUnassigned is already in use.
+	Handled apps with missing version values while building sort keys.
 v1.0.4 (2026-03-26)
 	Updated PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 v1.0.3 (2026-03-19)
@@ -46,10 +53,15 @@ v1.0.1 (2025-07-16):
 
 param (
 	[switch]$RemoveIfUnassigned,
-	[switch]$Force
+	[switch]$Force,
+	[switch]$ShowGraphUpdates
 )
 
 function Test-RequiredGraphCmdlets {
+	param (
+		[switch]$ShowGraphUpdates
+	)
+
 	$minimumSupportedVersion = [version]'2.35.0'
 	$modulesToManage = @(
 		'Microsoft.Graph.Authentication',
@@ -91,12 +103,14 @@ function Test-RequiredGraphCmdlets {
 		}
 
 		try {
-			$galleryModule = Find-Module -Name $moduleName -Repository PSGallery -ErrorAction Stop
-			if ([version]$galleryModule.Version -gt [version]$installedModule.Version) {
-				$modulesWithAvailableUpdates += [PSCustomObject]@{
-					Name = $moduleName
-					InstalledVersion = $installedModule.Version
-					LatestVersion = $galleryModule.Version
+			if ($ShowGraphUpdates) {
+				$galleryModule = Find-Module -Name $moduleName -Repository PSGallery -ErrorAction Stop
+				if ([version]$galleryModule.Version -gt [version]$installedModule.Version) {
+					$modulesWithAvailableUpdates += [PSCustomObject]@{
+						Name = $moduleName
+						InstalledVersion = $installedModule.Version
+						LatestVersion = $galleryModule.Version
+					}
 				}
 			}
 		}
@@ -175,8 +189,32 @@ function Test-RequiredGraphCmdlets {
 	}
 }
 
-Test-RequiredGraphCmdlets
+Test-RequiredGraphCmdlets -ShowGraphUpdates:$ShowGraphUpdates
 Connect-MgGraph -Scopes "DeviceManagementApps.ReadWrite.All" -NoWelcome
+
+function Get-VersionSortKey {
+	param (
+		$Value
+	)
+
+	if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+		return [version]'0.0'
+	}
+
+	$versionText = [string]$Value
+	$parsedVersion = $null
+
+	if ([version]::TryParse($versionText, [ref]$parsedVersion)) {
+		return $parsedVersion
+	}
+
+	$matchedVersion = [regex]::Match($versionText, '\d+(?:\.\d+){0,3}')
+	if ($matchedVersion.Success -and [version]::TryParse($matchedVersion.Value, [ref]$parsedVersion)) {
+		return $parsedVersion
+	}
+
+	return [version]'0.0'
+}
 
 # Retrieve all apps from beta endpoint (same family used by Intune UI), then filter client-side.
 function Get-GraphCollection {
@@ -328,6 +366,7 @@ $appsInfo = foreach ($app in $macOSApps) {
 		Assigned	= (Get-AppPropertyValue -App $app -Name 'isAssigned')
 		FileName	= $fileName
 		Version		= $bundleVersion
+		SortVersion	= Get-VersionSortKey -Value $bundleVersion
 		ODataType	= $odataType
 		IsVpp		= (Test-IsVppAppType -ODataType $odataType)
 	}
@@ -345,7 +384,7 @@ if (-not $duplicateApps) {
 $duplicateApps | Sort-Object -Property Count -Descending | Format-Table -AutoSize # Display groups with more than one version
 $oldVersionsAll = foreach ($group in $duplicateApps) {
 	# Identify older versions (excluding latest per group)
-	$ordered = $group.Group | Sort-Object -Property Version -Descending
+	$ordered = $group.Group | Sort-Object -Property SortVersion -Descending
 	$ordered | Select-Object -Skip 1
 }
 
@@ -354,13 +393,13 @@ $oldVersions = $oldVersionsAll | Where-Object { $_.IsVpp -ne $true }
 
 if ($excludedOldVersions) {
 	Write-Host "`nSkipping VPP app versions from cleanup:" -ForegroundColor DarkYellow
-	$excludedOldVersions | Sort-Object DisplayName, Version | Format-Table DisplayName, Version, Assigned, FileName, id -AutoSize
+	$excludedOldVersions | Sort-Object DisplayName, SortVersion | Format-Table DisplayName, Version, Assigned, FileName, id -AutoSize
 }
 
 if ($oldVersions) {
 	# Show older versions
 	Write-Host "`n--- Old versions found ---" -ForegroundColor Yellow
-	$oldVersions | Sort-Object DisplayName, Version | Format-Table DisplayName, Version, Assigned, FileName, id -AutoSize
+	$oldVersions | Sort-Object DisplayName, SortVersion | Format-Table DisplayName, Version, Assigned, FileName, id -AutoSize
 } else {
 	Write-Host "No old versions found." -ForegroundColor Green
 }
@@ -369,14 +408,14 @@ $stillAssigned = $oldVersions | Where-Object { $_.Assigned -eq $true } # Highlig
 
 if ($stillAssigned) {
 	Write-Host "`n--- WARNING: Old versions still assigned ---" -ForegroundColor Red
-	$stillAssigned | Sort-Object DisplayName, Version | Format-Table DisplayName, Version, FileName, id -AutoSize
-} else {
-	Write-Host "All old versions are unassigned. Safe to remove (please start again this script and use the -RemoveIfUnassigned switch)." -ForegroundColor Green
+	$stillAssigned | Sort-Object DisplayName, SortVersion | Format-Table DisplayName, Version, FileName, id -AutoSize
+} elseif ($oldVersions -and -not $RemoveIfUnassigned) {
+	Write-Host "All old versions are unassigned. Re-run with -RemoveIfUnassigned to remove them." -ForegroundColor Green
 }
 
 foreach ($group in $duplicateApps) {
 	# Move assignments from old versions to the newest version
-	$ordered = $group.Group | Sort-Object -Property Version -Descending
+	$ordered = $group.Group | Sort-Object -Property SortVersion -Descending
 	$newestApp = $ordered[0]
 	$oldApps = $ordered | Select-Object -Skip 1
 	$newestAssignments = @(Get-MgDeviceAppManagementMobileAppAssignment -MobileAppId $newestApp.id -All)
