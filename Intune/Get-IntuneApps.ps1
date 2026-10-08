@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.2
+.VERSION 1.0.3
 .GUID 236e8d45-0d5e-4c27-becd-50b512c7e87d
 .AUTHOR Giovanni Solone
 .TAGS powershell intune apps windows macos ios android microsoft graph
@@ -34,6 +34,7 @@ https://github.com/andrew-s-taylor/public/blob/main/Powershell%20Scripts/Intune/
 https://www.powershellgallery.com/packages/get-intune-apps
 
 Modification History:
+v1.0.3 (2026-10-08): -GridView falls back to a console table on PowerShell 7.6.6, where Out-GridView hangs (PowerShell/PowerShell#27994).
 v1.0.2 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 v1.0.1 (2025-10-24): Removed deprecated cmdlets, fallback to get apps version.
 v1.0.0 (2025-04-04): Initial version.
@@ -113,6 +114,13 @@ if ($PlatformFilter -ne "All") {
 # Output results
 $mappedAppsCount = ($mappedApps | Measure-Object).Count
 Write-Host "`nFound $mappedAppsCount apps." -ForegroundColor Cyan
+
+# Out-GridView never returns on PowerShell 7.6.6 (https://github.com/PowerShell/PowerShell/issues/27994)
+$psVersion = $PSVersionTable.PSVersion
+if ($GridView -and ('{0}.{1}.{2}' -f $psVersion.Major, $psVersion.Minor, $psVersion.Patch) -eq '7.6.6') {
+    Write-Warning "Out-GridView hangs on PowerShell $psVersion (PowerShell/PowerShell#27994): showing results in the console instead."
+    $GridView = $false
+}
 
 if ($GridView) {
     $mappedApps | Sort-Object OS, App | Out-GridView -Title "Intune Apps Overview ($mappedAppsCount apps found)"
