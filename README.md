@@ -13,6 +13,7 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 | `Download-FreeFileSync` | Checks for available FreeFileSync updates for Microsoft Windows and update it if available. (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Download-FreeFileSync)) |
 | `Download-WinSCP` | Checks for available WinSCP updates for Microsoft Windows and installs the latest version. (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Download-WinSCP)) |
 | `Download-WinSCPPortable` | Downloads the latest WinSCP Portable package and optionally WinSCPnet.dll. (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Download-WinSCPPortable)) |
+| `Get-DropboxTeamMember` | Retrieves Dropbox Business team members and their team member IDs (dbmid) by e-mail, display name, or full list (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-DropboxTeamMember)) |
 | `Get-IntuneApps` | View information about applications available on Intune (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-IntuneApps)) |
 | `Get-RclonePassword` | Reveals an rclone obscured password value when you already have the encoded text (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Get-RclonePassword)) |
 | `Remove-macOS-OldIntuneApps` | Manage macOS apps in Intune using Microsoft Graph, focusing on duplicates and old versions (<img src="Assets/ps_black_64.svg" width="16" alt="View on PowerShell Gallery" title="View on PowerShell Gallery"> [PSGallery](https://www.powershellgallery.com/packages/Remove-macOS-OldIntuneApps)) |
@@ -63,7 +64,7 @@ New-ScriptFileInfo `
   -Author 'Your Name' `
   -Description 'Describe what this script does.' `
   -LicenseUri 'https://opensource.org/licenses/MIT' `
-  -ProjectUri 'hhttps://github.com/<your-repo>' `
+  -ProjectUri 'https://github.com/<your-repo>' `
   -Tags 'powershell', 'scripts', 'utilities'
 ```
 
