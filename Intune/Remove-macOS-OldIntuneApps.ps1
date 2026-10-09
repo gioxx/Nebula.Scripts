@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.5
+.VERSION 1.0.6
 .GUID d2ace103-adeb-47be-80cd-2180db770ece
 .AUTHOR Giovanni Solone
 .TAGS powershell intune macos apps microsoft graph cleanup duplicates
@@ -29,6 +29,10 @@ Runs the script interactively, allowing you to review duplicates and move assign
 .\Remove-macOS-OldIntuneApps.ps1 -RemoveIfUnassigned -Force
 Removes old versions of macOS apps that are unassigned without prompting for confirmation.
 .NOTES
+v1.0.6 (2026-10-09)
+	Fixed assignment comparison: target group, type and filter are now read from AdditionalProperties returned by the Graph SDK.
+	Previously every assignment with the same intent looked identical, so an old-version assignment to a different group could be removed without being recreated on the newest version.
+	The target group is now shown correctly in the confirmation table.
 v1.0.5 (2026-06-11)
 	Added a dedicated switch to show available Microsoft Graph module updates from PSGallery.
 	Improved version comparison so duplicate app cleanup picks the truly oldest bundle version.
@@ -263,9 +267,7 @@ function Get-AppPropertyValue {
 	}
 
 	if ($App.AdditionalProperties -and $App.AdditionalProperties -is [System.Collections.IDictionary]) {
-		if ($App.AdditionalProperties.Contains($Name)) {
-			return $App.AdditionalProperties[$Name]
-		}
+		# SDK AdditionalProperties is a generic Dictionary: IDictionary.Contains() is not callable directly, so scan keys.
 		foreach ($key in $App.AdditionalProperties.Keys) {
 			if ([string]::Equals([string]$key, $Name, [System.StringComparison]::OrdinalIgnoreCase)) {
 				return $App.AdditionalProperties[$key]
@@ -304,14 +306,16 @@ function Get-AssignmentSignature {
 		$Assignment
 	)
 
+	# The Graph SDK exposes target fields (groupId, @odata.type, filters) only through AdditionalProperties,
+	# so read them via Get-AppPropertyValue instead of direct property access.
 	$intent = [string]$Assignment.intent
 	$target = $Assignment.target
-	$targetType = if ($target.'@odata.type') { [string]$target.'@odata.type' } else { '' }
-	$groupId = if ($target.groupId) { [string]$target.groupId } else { '' }
-	$collectionId = if ($target.deviceAndAppManagementAssignmentFilterId) { [string]$target.deviceAndAppManagementAssignmentFilterId } else { '' }
-	$filterType = if ($target.deviceAndAppManagementAssignmentFilterType) { [string]$target.deviceAndAppManagementAssignmentFilterType } else { '' }
+	$targetType = [string](Get-AppPropertyValue -App $target -Name '@odata.type')
+	$groupId = [string](Get-AppPropertyValue -App $target -Name 'groupId')
+	$filterId = [string](Get-AppPropertyValue -App $target -Name 'deviceAndAppManagementAssignmentFilterId')
+	$filterType = [string](Get-AppPropertyValue -App $target -Name 'deviceAndAppManagementAssignmentFilterType')
 
-	return "$intent|$targetType|$groupId|$collectionId|$filterType"
+	return "$intent|$targetType|$groupId|$filterId|$filterType"
 }
 
 function Test-IsVppAppType {
@@ -440,7 +444,7 @@ foreach ($group in $duplicateApps) {
 		Write-Host "Old version  : $($oldApp.Version)"
 		Write-Host "New version  : $($newestApp.Version)"
 		Write-Host "Assignments to move:" -ForegroundColor Gray
-		$assignments | Format-Table id, intent, @{Name = "Target"; Expression = { $_.target.groupId } } -AutoSize
+		$assignments | Format-Table id, intent, @{Name = "Target"; Expression = { Get-AppPropertyValue -App $_.target -Name 'groupId' } } -AutoSize
 
 		$choice = Read-Host "`nDo you want to move these assignments to the newer version? [y/n] (default: y)" # Ask for user confirmation
 

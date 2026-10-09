@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.3
+.VERSION 1.0.4
 .GUID 236e8d45-0d5e-4c27-becd-50b512c7e87d
 .AUTHOR Giovanni Solone
 .TAGS powershell intune apps windows macos ios android microsoft graph
@@ -25,15 +25,18 @@ If specified, exports the data to IntuneApps.json.
 .PARAMETER DebugFirstApp
 If specified, dumps the full details of the first application for debugging purposes.
 .EXAMPLE
-.\IntuneApps.ps1 -PlatformFilter Windows
+.\Get-IntuneApps.ps1 -PlatformFilter Windows
+Shows only Windows applications.
 .EXAMPLE
-.\IntuneApps.ps1 -GridView
+.\Get-IntuneApps.ps1 -GridView
+Shows all applications in GridView.
 .NOTES
 Credits:
 https://github.com/andrew-s-taylor/public/blob/main/Powershell%20Scripts/Intune/get-intune-apps.ps1
 https://www.powershellgallery.com/packages/get-intune-apps
 
 Modification History:
+v1.0.4 (2026-10-09): Follow @odata.nextLink so tenants with more apps than a single Graph page are fully listed. Fixed script name in examples.
 v1.0.3 (2026-10-08): -GridView falls back to a console table on PowerShell 7.6.6, where Out-GridView hangs (PowerShell/PowerShell#27994).
 v1.0.2 (2026-03-26): Fixed PROJECTURI in the script metadata to point to the correct GitHub repository and file.
 v1.0.1 (2025-10-24): Removed deprecated cmdlets, fallback to get apps version.
@@ -51,16 +54,22 @@ param (
 
 # Connect to Microsoft Graph and retrieve all applications and their types
 Connect-MgGraph -Scopes "DeviceManagementApps.Read.All" -NoWelcome
-$apps = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps"
+$apps = [System.Collections.Generic.List[object]]::new()
+$nextUri = "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps"
+while ($nextUri) {
+    $response = Invoke-MgGraphRequest -Method GET -Uri $nextUri -ErrorAction Stop
+    if ($response.value) { $apps.AddRange([object[]]$response.value) }
+    $nextUri = $response.'@odata.nextLink'
+}
 
 # DEBUG MODE: Dump full first app object
 if ($DebugFirstApp) {
     Write-Host "`n[DEBUG] Dumping raw details of the first application:`n" -ForegroundColor Yellow
-    $apps.value[0] | ConvertTo-Json -Depth 10 | Out-String | Write-Host
+    $apps[0] | ConvertTo-Json -Depth 10 | Out-String | Write-Host
     return
 }
 
-$mappedApps = $apps.value | ForEach-Object {
+$mappedApps = $apps | ForEach-Object {
     $type = $_.'@odata.type'
     $mapping = switch ($type) {
         "#microsoft.graph.win32LobApp" { @{ OS = "Windows"; Type = "Win32 App" } }
