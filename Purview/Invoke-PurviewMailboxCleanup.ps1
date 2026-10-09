@@ -11,22 +11,66 @@
     - Requires explicit confirmation before performing Purge (unless -SkipConfirmation is used).
     - Purge is executed in a loop because Purge actions are limited per mailbox per run.
 
-.REQUIREMENTS
+.PARAMETER Mailbox
+    Mailbox (address or identity) to search and purge.
+
+.PARAMETER CutoffDate
+    Items received or sent before this date are matched. Mandatory, to avoid purging with an unintended default.
+
+.PARAMETER PurgeType
+    SoftDelete (default, items go to Recoverable Items) or HardDelete.
+
+.PARAMETER SkipPreview
+    Does not create or reuse a Preview action.
+
+.PARAMETER SkipConfirmation
+    Does not ask for the YES confirmation before purging.
+
+.PARAMETER ExistingSearchName
+    Reuses an existing Compliance Search instead of creating a new one. Its own query is used, not CutoffDate.
+
+.PARAMETER AutoResumeLatest
+    Reuses the most recent Purge_PreCutoff_* search for the mailbox, if any.
+
+.PARAMETER TimeoutMinutes
+    Maximum minutes to wait for a single search run or action to complete. Default: 60.
+
+.PARAMETER MaxPurgeIterations
+    Maximum number of purge iterations before stopping. Default: 200.
+
+.EXAMPLE
+    .\Invoke-PurviewMailboxCleanup.ps1 -Mailbox 'shared@contoso.com' -CutoffDate '2025-01-01'
+    Searches items older than 2025-01-01, creates a Preview action and asks for confirmation before a SoftDelete purge.
+
+.EXAMPLE
+    .\Invoke-PurviewMailboxCleanup.ps1 -Mailbox 'shared@contoso.com' -CutoffDate '2025-01-01' -AutoResumeLatest
+    Resumes the latest search created for the mailbox, reusing its completed Preview action when available.
+
+.NOTES
+    Requirements:
     - ExchangeOnlineManagement module
     - Purview / Security & Compliance PowerShell connectivity via Connect-IPPSSession
     - Appropriate Purview permissions (eDiscovery/Compliance search & purge roles)
 
-.NOTES
     - SoftDelete moves items to Recoverable Items.
     - HardDelete is more aggressive but can still be constrained by holds/retention.
     - Purge actions do not remove unindexed items; counts may show "UnindexedItems".
+    - The purge loop stops when the item count does not decrease for 3 consecutive iterations
+      (typically items on hold/retention or unindexed items that Purge cannot remove).
+
+    Modification History:
+    2026-10-09: Fixed comment-based help (invalid .REQUIREMENTS keyword hid the whole help block).
+                CutoffDate is now mandatory. Query dates use a culture-independent format.
+                Added timeouts to search/action polling, a maximum number of purge iterations and stall detection.
+                Shows the query of a reused search before asking for confirmation.
 #>
 
 param(
     [Parameter(Mandatory = $true)]
     [string]$Mailbox,
 
-    [datetime]$CutoffDate = [datetime]"2025-01-01",
+    [Parameter(Mandatory = $true)]
+    [datetime]$CutoffDate,
 
     [ValidateSet("SoftDelete", "HardDelete")]
     [string]$PurgeType = "SoftDelete",
@@ -37,7 +81,13 @@ param(
 
     [string]$ExistingSearchName,
 
-    [switch]$AutoResumeLatest
+    [switch]$AutoResumeLatest,
+
+    [ValidateRange(1, 1440)]
+    [int]$TimeoutMinutes = 60,
+
+    [ValidateRange(1, 10000)]
+    [int]$MaxPurgeIterations = 200
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,11 +96,21 @@ $ErrorActionPreference = "Stop"
 # Helpers (Purview)
 # -------------------------
 function Wait-ComplianceSearchCompleted {
-    param([Parameter(Mandatory = $true)][string]$Name)
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [int]$TimeoutMinutes = 60
+    )
 
+    $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
     while ($true) {
         $s = Get-ComplianceSearch -Identity $Name
         if ($s.Status -eq "Completed") { return $s }
+        if ($s.Status -in @("Stopped", "Failed")) {
+            throw "Compliance search '$Name' ended with status '$($s.Status)'. Errors: $($s.Errors)"
+        }
+        if ((Get-Date) -gt $deadline) {
+            throw "Compliance search '$Name' did not complete within $TimeoutMinutes minutes (last status: $($s.Status))."
+        }
         Start-Sleep -Seconds 10
     }
 }
@@ -59,10 +119,12 @@ function Wait-ComplianceSearchActionCompleted {
     param(
         [Parameter(Mandatory = $true)][string]$Identity,
         [int]$MaxRetries = 60,
-        [int]$SleepSeconds = 5
+        [int]$SleepSeconds = 5,
+        [int]$TimeoutMinutes = 60
     )
 
     $attempt = 0
+    $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
     while ($true) {
         $attempt++
 
@@ -76,6 +138,10 @@ function Wait-ComplianceSearchActionCompleted {
             if ($attempt -ge $MaxRetries) {
                 throw
             }
+        }
+
+        if ((Get-Date) -gt $deadline) {
+            throw "Compliance search action '$Identity' did not complete within $TimeoutMinutes minutes."
         }
 
         Start-Sleep -Seconds $SleepSeconds
@@ -161,7 +227,8 @@ Connect-IPPSSession -EnableSearchOnlySession | Out-Null
 # -------------------------
 # Build query
 # -------------------------
-$cutoffStr = $CutoffDate.ToString("MM/dd/yyyy")
+# Culture-independent ISO date: "MM/dd/yyyy" would use the local date separator (e.g. "01.31.2025" on de-DE).
+$cutoffStr = $CutoffDate.ToString("yyyy-MM-dd", [System.Globalization.CultureInfo]::InvariantCulture)
 $query = "(Received<$cutoffStr) OR (Sent<$cutoffStr)"
 
 Write-Host "Mailbox: $Mailbox" -ForegroundColor Cyan
@@ -201,8 +268,13 @@ Write-Host ""
 $existingSearch = Get-ComplianceSearch -Identity $searchName -ErrorAction SilentlyContinue
 
 if ($existingSearch) {
+    # A reused search keeps its own query: show it, since it may not match CutoffDate.
+    Write-Host "Reused search query: $($existingSearch.ContentMatchQuery)" -ForegroundColor Yellow
+    if ($existingSearch.ContentMatchQuery -ne $query) {
+        Write-Host "Warning: the reused search query differs from the query built from CutoffDate. The reused query will be applied." -ForegroundColor Yellow
+    }
     Start-ComplianceSearch -Identity $searchName | Out-Null
-    $s = Wait-ComplianceSearchCompleted -Name $searchName
+    $s = Wait-ComplianceSearchCompleted -Name $searchName -TimeoutMinutes $TimeoutMinutes
 }
 else {
     # Only create if this is not meant to be an existing search.
@@ -213,7 +285,7 @@ else {
 
     New-ComplianceSearch -Name $searchName -ExchangeLocation $Mailbox -ContentMatchQuery $query | Out-Null
     Start-ComplianceSearch -Identity $searchName | Out-Null
-    $s = Wait-ComplianceSearchCompleted -Name $searchName
+    $s = Wait-ComplianceSearchCompleted -Name $searchName -TimeoutMinutes $TimeoutMinutes
 }
 
 # Display estimates
@@ -253,7 +325,7 @@ if (-not $SkipPreview) {
         # Give the service a moment to register the action before polling.
         Start-Sleep -Seconds 15
 
-        $previewResult = Wait-ComplianceSearchActionCompleted -Identity $previewAction.Identity
+        $previewResult = Wait-ComplianceSearchActionCompleted -Identity $previewAction.Identity -TimeoutMinutes $TimeoutMinutes
 
         Write-Host ("Preview action status: {0}" -f $previewResult.Status) -ForegroundColor Green
 
@@ -322,11 +394,18 @@ Write-Host ""
 Write-Host "Starting purge loop..." -ForegroundColor Cyan
 
 $iteration = 0
+$previousItems = $null
+$stalledIterations = 0
 while ($true) {
     $iteration++
 
+    if ($iteration -gt $MaxPurgeIterations) {
+        Write-Host "Reached the maximum number of purge iterations ($MaxPurgeIterations). Stopping; re-run to continue." -ForegroundColor Yellow
+        break
+    }
+
     Start-ComplianceSearch -Identity $searchName | Out-Null
-    $s = Wait-ComplianceSearchCompleted -Name $searchName
+    $s = Wait-ComplianceSearchCompleted -Name $searchName -TimeoutMinutes $TimeoutMinutes
 
     if ([int]$s.Items -le 0) {
         Write-Host "Done. No more items matching the query." -ForegroundColor Green
@@ -335,10 +414,23 @@ while ($true) {
 
     Write-Host ("Iteration {0} - remaining estimated items: {1}" -f $iteration, $s.Items) -ForegroundColor Yellow
 
+    # Items on hold/retention (or otherwise not purgeable) keep the count constant: stop instead of looping forever.
+    if ($null -ne $previousItems -and [int]$s.Items -ge $previousItems) {
+        $stalledIterations++
+        if ($stalledIterations -ge 3) {
+            Write-Host "The item count has not decreased for 3 iterations ($($s.Items) items left). Remaining items are probably on hold/retention or not purgeable. Stopping." -ForegroundColor Red
+            break
+        }
+    }
+    else {
+        $stalledIterations = 0
+    }
+    $previousItems = [int]$s.Items
+
     $purgeAction = New-ComplianceSearchAction -SearchName $searchName -Purge -PurgeType $PurgeType -Force -Confirm:$false
 
     Start-Sleep -Seconds 15
-    $purgeResult = Wait-ComplianceSearchActionCompleted -Identity $purgeAction.Identity
+    $purgeResult = Wait-ComplianceSearchActionCompleted -Identity $purgeAction.Identity -TimeoutMinutes $TimeoutMinutes
 
     # Give the backend some time to apply changes before re-running the search.
     Start-Sleep -Seconds 15
