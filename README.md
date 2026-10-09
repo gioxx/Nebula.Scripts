@@ -20,11 +20,23 @@ These scripts are individually published on the [PowerShell Gallery](https://www
 
 More scripts will be added over time.
 
+### 🧪 Work in Progress
+
+> [!CAUTION]
+> These scripts are **not published on PowerShell Gallery** and are not yet ready for general use.
+> Use them with caution and test them on non-critical data first.
+
+| Folder | Script Name | Description |
+|--------|------------------------|------------------------------------------------------------------|
+| Purview | [`Invoke-PurviewMailboxCleanup`](Purview/Invoke-PurviewMailboxCleanup.ps1) | Runs a Purview Compliance Search for items older than a cutoff date in a mailbox, with optional Preview action and confirmed purge loop. |
+| Purview | [`Invoke-PurviewMailboxCleanup_Graph`](Purview/Invoke-PurviewMailboxCleanup_Graph.ps1) | Shows a sample of old messages via Microsoft Graph (`-PreviewOnly`) or purges them via Purview Compliance Search after confirmation. |
+| Utility | [`7z`](Utility/7z.ps1) | Compresses every subfolder of a folder into its own `.7z` archive using 7-Zip. |
+
 ### 🗃️ Deprecated Scripts
 
 > [!WARNING]  
 > **Deprecated scripts will no longer receive updates on PowerShell Gallery**.  
-> Development will continue through functions included in the module.
+> Development continues through the functions included in the Nebula modules.
 
 | Folder | Script Name | Description |
 |--------|------------------------|------------------------------------------------------------------|
@@ -37,16 +49,16 @@ More scripts will be added over time.
 ## 🚀 Getting Started
 
 You can install a script directly from the PowerShell Gallery.  
-The example below is based on the `Remove-OldPSModules` script, [available here](Management/Remove-OldPSModules.ps1):
+The example below is based on the `Get-IntuneApps` script, [available here](Intune/Get-IntuneApps.ps1):
 
 ```powershell
-Install-Script -Name Remove-OldPSModules -Scope CurrentUser -Force
+Install-Script -Name Get-IntuneApps -Scope CurrentUser -Force
 ```
 
 Then run it:
 
 ```powershell
-Remove-OldPSModules.ps1
+Get-IntuneApps.ps1 -PlatformFilter Windows
 ```
 
 Make sure your [Execution Policy](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies) allows script execution.
@@ -92,7 +104,7 @@ Demonstrates typical usage.
 ### Requirements
 
 - PowerShell 7.0 or later
-- PowerShellGet v3+ (`Install-Module PowerShellGet -Force`)
+- Microsoft.PowerShell.PSResourceGet (included in PowerShell 7.4+, otherwise `Install-Module Microsoft.PowerShell.PSResourceGet -Scope CurrentUser`)
 - Valid [NuGet API key](https://www.powershellgallery.com/account/apikeys)
 
 ### ✅ Publishing a Script
@@ -138,7 +150,7 @@ All scripts in this repository are licensed under the [MIT License](https://open
 
 ## 🔧 Development
 
-This module is part of the [Nebula](https://github.com/gioxx?tab=repositories&q=Nebula) PowerShell tools family.
+This repository is part of the [Nebula](https://github.com/gioxx?tab=repositories&q=Nebula) PowerShell tools family.
 
 Feel free to fork, improve and submit pull requests.
 
