@@ -1,7 +1,43 @@
 # Work in Progress, not yet ready for general use. Use with caution and test on non-critical data first.
 # This is an evolution of my older 7z.cmd script (https://gioxx.org/2020/02/17/7-zip-compattare-piu-cartelle-con-un-doppio-clic/), rewritten from scratch with better structure, error handling, and performance optimizations.
 
-#requires -version 5.1
+#Requires -Version 5.1
+
+<#
+.SYNOPSIS
+Compresses every subfolder of a source folder into its own .7z archive.
+
+.DESCRIPTION
+For each first-level subfolder of Source, this script creates <FolderName>.7z in Destination using 7-Zip
+with maximum compression (-mx=9). Archives are written to a .tmp file first and renamed only on success,
+so an interrupted run never leaves a truncated archive behind. Existing archives are skipped.
+7-Zip warnings (exit code 1, e.g. files locked by another process) keep the archive and are reported.
+
+.PARAMETER Source
+Folder whose subfolders will be compressed. Defaults to the current folder.
+
+.PARAMETER Destination
+Folder where the archives are created. Created if missing. Defaults to the current folder.
+
+.PARAMETER ExcludeDirs
+Names of subfolders to skip (case-insensitive).
+
+.PARAMETER Show7zOutput
+Shows the 7-Zip console output instead of hiding it.
+
+.EXAMPLE
+.\7z.ps1 -Source 'D:\Projects' -Destination 'E:\Backup'
+Creates one .7z archive in E:\Backup for every subfolder of D:\Projects.
+
+.EXAMPLE
+.\7z.ps1 -ExcludeDirs 'node_modules', '.git' -Show7zOutput
+Compresses the subfolders of the current folder, skipping node_modules and .git, and shows 7-Zip output.
+
+.NOTES
+Modification History:
+2026-10-09: Added comment-based help. 7-Zip exit code 1 (warnings) is no longer treated as a failure. Fixed 7z.exe lookup when ProgramFiles(x86) is not defined.
+#>
+
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $false)]
@@ -23,10 +59,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Resolve-SevenZipPath {
-  $candidates = @(
-    Join-Path $env:ProgramFiles '7-Zip\7z.exe'
-    Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe'
-  )
+  # ProgramFiles(x86) is not defined on 32-bit Windows: Join-Path would fail on a null path.
+  $candidates = @($env:ProgramFiles, ${env:ProgramFiles(x86)}) |
+  Where-Object { $_ } |
+  ForEach-Object { Join-Path $_ '7-Zip\7z.exe' }
 
   foreach ($path in $candidates) {
     if ($path -and (Test-Path -LiteralPath $path)) {
@@ -161,7 +197,11 @@ foreach ($folder in $folderList) {
       }
     }
 
-    if ($LASTEXITCODE -eq 0) {
+    # 7-Zip exit codes: 0 = success, 1 = warning (e.g. some files locked, archive still created), >= 2 = fatal error.
+    if ($LASTEXITCODE -le 1 -and (Test-Path -LiteralPath $tempArchivePath)) {
+      if ($LASTEXITCODE -eq 1) {
+        Write-Warning "7-Zip reported warnings for $folderName (exit code 1): some files may be missing from the archive. Re-run with -Show7zOutput for details."
+      }
       Move-Item -LiteralPath $tempArchivePath -Destination $archivePath -Force
     }
     else {

@@ -1,11 +1,12 @@
 <#PSScriptInfo
-.VERSION 1.1.0
+.VERSION 1.1.1
 .GUID a3f9c812-5e2b-4d7a-b1f6-8c3e0d9a4b7e
 .AUTHOR Giovanni Solone
 .TAGS powershell winscp portable download tools
 .LICENSEURI https://opensource.org/licenses/MIT
 .PROJECTURI https://github.com/gioxx/Nebula.Scripts/blob/main/Utility/Download-WinSCPPortable.ps1
 .RELEASENOTES
+v1.1.1 (2026-10-09): Version check now uses ProductVersion, so an up-to-date WinSCPnet.dll (FileVersion 1.x) is no longer downloaded again on every run. The Automation ZIP is always removed from the temp folder, even when extraction fails.
 v1.1.0 (2026-05-07): Added ShowProgress and switched extraction to a temporary folder workflow for more reliable file deployment. Preserve both WinSCPnet.dll variants for Windows PowerShell 5.1 and PowerShell 7.
 v1.0.0 (2026-03-26): Initial release.
 #>
@@ -182,8 +183,11 @@ function Test-AlreadyUpToDate {
         [string] $FilePath,
         [string] $Version
     )
-    if (Test-Path $FilePath) {
-        $fileVersion = (Get-Item $FilePath).VersionInfo.FileVersion -replace ',', '.' -replace ' ', ''
+    if (Test-Path -LiteralPath $FilePath) {
+        # WinSCPnet.dll has its own FileVersion (1.x), while ProductVersion matches the WinSCP release for both files.
+        $versionInfo = (Get-Item -LiteralPath $FilePath).VersionInfo
+        $fileVersion = if ($versionInfo.ProductVersion) { $versionInfo.ProductVersion } else { $versionInfo.FileVersion }
+        $fileVersion = $fileVersion -replace ',', '.' -replace ' ', ''
         if ($fileVersion -like "$Version*") {
             return $true
         }
@@ -318,13 +322,13 @@ $exePath = Join-Path $Destination "WinSCP.exe"
 if (Test-AlreadyUpToDate -FilePath $exePath -Version $version) {
     Write-Output "WinSCP $version portable is already up to date in: $Destination"
 }
-    else {
-        $zipFile = Get-WinSCPPackage -Version $version -FileName "WinSCP-$version-Portable.zip" -DisplayName "WinSCP $version Portable"
-        Write-ProgressMessage "Extracting to: $Destination"
-        $tempFolder = New-TempExtractionFolder -Prefix 'WinSCP_Portable'
-        try {
-            Expand-Archive -Path $zipFile -DestinationPath $tempFolder -Force
-            Copy-FolderContentsWithRetry -SourceFolder $tempFolder -DestinationFolder $Destination
+else {
+    $zipFile = Get-WinSCPPackage -Version $version -FileName "WinSCP-$version-Portable.zip" -DisplayName "WinSCP $version Portable"
+    Write-ProgressMessage "Extracting to: $Destination"
+    $tempFolder = New-TempExtractionFolder -Prefix 'WinSCP_Portable'
+    try {
+        Expand-Archive -Path $zipFile -DestinationPath $tempFolder -Force
+        Copy-FolderContentsWithRetry -SourceFolder $tempFolder -DestinationFolder $Destination
         Write-Output "Portable package ready in: $Destination"
     }
     finally {
@@ -344,8 +348,12 @@ if ($IncludeDotNet) {
     else {
         $zipFile = Get-WinSCPPackage -Version $version -FileName "WinSCP-$version-Automation.zip" -DisplayName "WinSCP $version .NET assembly / COM library"
         Write-ProgressMessage "Extracting WinSCPnet.dll variants to: $Destination"
-        Expand-DotNetDll -ZipPath $zipFile -Destination $Destination
-        Remove-Item -LiteralPath $zipFile -Force -ErrorAction SilentlyContinue
+        try {
+            Expand-DotNetDll -ZipPath $zipFile -Destination $Destination
+        }
+        finally {
+            Remove-Item -LiteralPath $zipFile -Force -ErrorAction SilentlyContinue
+        }
         Write-Output ".NET assembly ready in: $Destination"
     }
 }
