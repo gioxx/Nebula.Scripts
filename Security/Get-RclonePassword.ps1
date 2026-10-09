@@ -1,5 +1,5 @@
 <#PSScriptInfo
-.VERSION 1.0.0
+.VERSION 1.0.1
 .GUID 8f0d4e0c-1d7f-4b9d-9f0b-5d4c4dce0a01
 .AUTHOR Giovanni Solone
 .TAGS powershell rclone password security decrypt
@@ -32,6 +32,10 @@ Credits:
 - https://forum.rclone.org/t/get-password-and-salt-from-config/14788
 - https://forum.rclone.org/t/how-to-retrieve-a-crypt-password-from-a-config-file/20051
 - https://go.dev/play/p/IcRYDip3PnE
+
+Modification History:
+v1.0.1 (2026-10-09): Fixed AES-CTR counter increment failing with a byte overflow error on values longer than 16 bytes when a counter byte reaches 255.
+v1.0.0: Initial release.
 #>
 
 [CmdletBinding()]
@@ -124,7 +128,8 @@ begin {
 
                 # Increment the counter as a big-endian 128-bit integer.
                 for ($j = 15; $j -ge 0; $j--) {
-                    $counter[$j]++
+                    # PowerShell promotes byte arithmetic to int: wrap explicitly to avoid a conversion error at 255.
+                    $counter[$j] = [byte](($counter[$j] + 1) -band 0xFF)
                     if ($counter[$j] -ne 0) {
                         break
                     }
