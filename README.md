@@ -28,6 +28,7 @@ More scripts will be added over time.
 
 | Folder | Script Name | Description |
 |--------|------------------------|------------------------------------------------------------------|
+| Exchange | [`Get-OrphanedSharedMailboxes`](Exchange/Get-OrphanedSharedMailboxes.ps1) | Audits Exchange Online shared mailboxes without explicit FullAccess, SendAs or SendOnBehalf permissions, saving results to a resumable CSV report. |
 | Purview | [`Invoke-PurviewMailboxCleanup`](Purview/Invoke-PurviewMailboxCleanup.ps1) | Runs a Purview Compliance Search for items older than a cutoff date in a mailbox, with optional Preview action and confirmed purge loop. |
 | Purview | [`Invoke-PurviewMailboxCleanup_Graph`](Purview/Invoke-PurviewMailboxCleanup_Graph.ps1) | Shows a sample of old messages via Microsoft Graph (`-PreviewOnly`) or purges them via Purview Compliance Search after confirmation. |
 | Utility | [`7z`](Utility/7z.ps1) | Compresses every subfolder of a folder into its own `.7z` archive using 7-Zip. |
